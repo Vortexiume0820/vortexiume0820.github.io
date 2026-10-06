@@ -3,129 +3,143 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>關於 — CDN 測試頁</title>
+  <title>CDN 行為檢測台 — about</title>
   <style>
-    :root {
-      --bg: #0f1117;
-      --card: #1a1d27;
-      --line: #2a2e3a;
-      --text: #e6e8ee;
-      --muted: #9aa0ae;
-      --accent: #85b7eb;
-      --accent2: #5dcaa5;
-      --warn: #efb45c;
+    :root{
+      --bg:#10131c; --panel:#171b28; --panel2:#1e2435; --line:#2b3246;
+      --text:#eef1f7; --muted:#9298aa; --mono:ui-monospace,"SF Mono",Menlo,monospace;
+      --hit:#4fd38a; --miss:#f0a24b; --unknown:#7f8aa3; --accent:#5dcaa5;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      line-height: 1.6;
-    }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      max-width: 560px;
-      width: 100%;
-      padding: 32px;
-    }
-    h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
-    .sub { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
-    .badge {
-      display: inline-block;
-      background: rgba(133,183,235,0.15);
-      color: var(--accent);
-      border: 1px solid rgba(133,183,235,0.4);
-      padding: 4px 12px;
-      border-radius: 999px;
-      font-size: 13px;
-      margin-bottom: 24px;
-    }
-    .row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--line);
-      font-size: 14px;
-    }
-    .row:last-child { border-bottom: none; }
-    .row .label { color: var(--muted); }
-    .row .value { font-family: ui-monospace, "SF Mono", Menlo, monospace; color: var(--text); text-align: right; }
-    p.body { font-size: 14px; color: var(--muted); margin: 20px 0; }
-    .nav { margin-top: 24px; display: flex; gap: 12px; }
-    .btn {
-      display: inline-block;
-      padding: 10px 18px;
-      border-radius: 10px;
-      font-size: 14px;
-      text-decoration: none;
-      border: 1px solid var(--line);
-      color: var(--text);
-      transition: border-color .15s;
-    }
-    .btn:hover { border-color: var(--accent); }
-    .btn.primary { background: rgba(93,202,165,0.15); border-color: rgba(93,202,165,0.4); color: var(--accent2); }
-    .hint {
-      margin-top: 24px;
-      padding: 16px;
-      background: rgba(239,180,92,0.08);
-      border: 1px solid rgba(239,180,92,0.2);
-      border-radius: 12px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-    .hint b { color: var(--text); font-weight: 600; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;
+      background:var(--bg);color:var(--text);min-height:100vh;padding:28px 20px;line-height:1.6;
+      display:flex;justify-content:center;}
+    .wrap{width:100%;max-width:620px}
+    .head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:4px}
+    h1{font-size:21px;font-weight:600}
+    .page-tag{font-family:var(--mono);font-size:12px;color:var(--accent);
+      border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+    .sub{color:var(--muted);font-size:14px;margin-bottom:22px}
+
+    .verdict{border-radius:14px;padding:20px;margin-bottom:20px;border:1px solid var(--line);
+      background:var(--panel);display:flex;align-items:center;gap:16px}
+    .dot{width:14px;height:14px;border-radius:50%;flex:0 0 auto;background:var(--unknown)}
+    .verdict.hit .dot{background:var(--hit)} .verdict.miss .dot{background:var(--miss)}
+    .verdict .big{font-size:18px;font-weight:600}
+    .verdict .desc{font-size:13px;color:var(--muted);margin-top:2px}
+
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+      padding:6px 20px;margin-bottom:20px}
+    .r{display:flex;justify-content:space-between;align-items:center;gap:16px;
+      padding:13px 0;border-bottom:1px solid var(--line);font-size:14px}
+    .r:last-child{border-bottom:none}
+    .r .k{color:var(--muted);flex:0 0 auto}
+    .r .v{font-family:var(--mono);text-align:right;word-break:break-all}
+    .v.na{color:var(--unknown)}
+    .section-title{font-size:12px;color:var(--muted);margin:0 0 8px 4px;letter-spacing:.02em}
+
+    .nav{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+    .btn{font-size:14px;text-decoration:none;padding:11px 18px;border-radius:10px;
+      border:1px solid var(--line);color:var(--text);background:var(--panel2);cursor:pointer}
+    .btn:hover{border-color:var(--accent)}
+    .btn.primary{background:rgba(93,202,165,.16);border-color:rgba(93,202,165,.45);color:var(--accent)}
+
+    .note{font-size:13px;color:var(--muted);background:var(--panel);border:1px solid var(--line);
+      border-radius:14px;padding:16px 18px}
+    .note b{color:var(--text);font-weight:600}
+    .note code{font-family:var(--mono);background:var(--panel2);padding:1px 6px;border-radius:5px;font-size:12px}
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="badge">● 你現在在「about.html」這一頁</div>
-    <h1>關於這個測試</h1>
-    <p class="sub">如果你是從首頁點連結來到這裡,而且網址還停在你的加速域名上,代表多頁連結 + CDN 都正常運作。</p>
+  <div class="wrap">
+    <div class="head">
+      <h1>CDN 行為檢測台</h1>
+      <span class="page-tag">about</span>
+    </div>
+    <p class="sub">你從首頁連過來的。網址列若仍停在你的加速域名,代表多頁連結正確走 CDN、沒被踢回源站。</p>
 
-    <p class="body">
-      這是一個用來練習 BytePlus CDN 的測試頁。它和首頁放在同一個資料夾,
-      透過相對連結互相連接,所以點來點去都會停在你自己的加速域名底下、持續走 CDN,
-      不會被踢回 GitHub 原站。
-    </p>
+    <div class="verdict" id="verdict">
+      <span class="dot"></span>
+      <div>
+        <div class="big" id="verdict-title">檢測中…</div>
+        <div class="desc" id="verdict-desc">正在重新請求自己並讀取標頭</div>
+      </div>
+    </div>
 
-    <div class="row">
-      <span class="label">你造訪的網址</span>
-      <span class="value" id="host">—</span>
-    </div>
-    <div class="row">
-      <span class="label">目前路徑</span>
-      <span class="value" id="path">—</span>
-    </div>
-    <div class="row">
-      <span class="label">這次載入的時間</span>
-      <span class="value" id="loadtime">—</span>
-    </div>
+    <div class="section-title">快取相關標頭(由 CDN 回應)</div>
+    <div class="panel" id="cache-panel"></div>
+
+    <div class="section-title">這次請求 / 頁面資訊</div>
+    <div class="panel" id="page-panel"></div>
 
     <div class="nav">
-      <a class="btn primary" href="index.html">← 回首頁</a>
-      <a class="btn" href="about.html">重新載入本頁</a>
+      <button class="btn primary" onclick="recheck()">重新檢測一次</button>
+      <a class="btn" href="index.html">&larr; 回首頁</a>
     </div>
 
-    <div class="hint">
-      <b>觀察重點:</b> 點「回首頁」和「重新載入本頁」時,注意瀏覽器網址列——
-      域名應該<b>一直是你的加速域名</b>,不會變成 github.io。
-      若變成 github.io,代表連結被寫成了絕對網址(寫死域名),要改回相對路徑。
-      另外 F12 → Network 看這兩頁的 <b>X-Cache</b>,第二次載入應該是 HIT。
+    <div class="note">
+      <b>跳轉檢查:</b> 你點「回首頁」後,網址應該變成 <code>你的加速域名/index.html</code>,
+      <b>域名不變</b>。若變成 <code>github.io</code>,代表連結被寫成了絕對網址,要改回相對路徑。<br>
+      <b>快取:</b> <code>MISS</code>=回源抓最新,<code>HIT</code>=快取回。about 和 index 是兩筆不同的快取,各自獨立。
     </div>
   </div>
 
   <script>
-    document.getElementById('host').textContent = location.host || '(本機檔案)';
-    document.getElementById('path').textContent = location.pathname || '/';
-    document.getElementById('loadtime').textContent = new Date().toLocaleString('zh-TW');
+    var CACHE_HEADERS = ['x-cache','age','cache-control','x-cache-remote','via','cf-cache-status','x-served-by','etag','last-modified','expires'];
+
+    function row(k, v, isNa){
+      return '<div class="r"><span class="k">'+k+'</span><span class="v'+(isNa?' na':'')+'">'+v+'</span></div>';
+    }
+    function setVerdict(state, title, desc){
+      var el = document.getElementById('verdict');
+      el.className = 'verdict' + (state ? ' '+state : '');
+      document.getElementById('verdict-title').textContent = title;
+      document.getElementById('verdict-desc').textContent = desc;
+    }
+    function fillPage(){
+      var html = '';
+      html += row('你造訪的網址', location.host || '(本機檔案)');
+      html += row('目前路徑', location.pathname || '/');
+      html += row('協議', location.protocol.replace(':',''));
+      html += row('本次載入時間', new Date().toLocaleString('zh-TW'));
+      document.getElementById('page-panel').innerHTML = html;
+    }
+    function recheck(){
+      setVerdict('', '檢測中…', '正在重新請求自己並讀取標頭');
+      document.getElementById('cache-panel').innerHTML = row('狀態', '請求中…', true);
+      var url = location.pathname + '?_probe=' + Date.now();
+      fetch(url, {cache:'no-store'}).then(function(res){
+        var found = {};
+        CACHE_HEADERS.forEach(function(h){
+          var val = res.headers.get(h);
+          if(val !== null) found[h] = val;
+        });
+        var html = '';
+        CACHE_HEADERS.forEach(function(h){
+          if(found[h] !== undefined) html += row(h, found[h]);
+        });
+        if(html === '') html += row('快取標頭', '這次沒讀到任何快取相關標頭', true);
+        document.getElementById('cache-panel').innerHTML = html;
+        var xc = (found['x-cache'] || found['cf-cache-status'] || found['x-cache-remote'] || '').toLowerCase();
+        if(xc.indexOf('hit') > -1){
+          setVerdict('hit', '命中(HIT)', '這次直接由 CDN 快取回傳,沒有回源');
+        } else if(xc.indexOf('miss') > -1){
+          setVerdict('miss', '未命中(MISS)', '這次 CDN 回源抓了最新版,並存進快取');
+        } else {
+          var age = found['age'];
+          if(age !== undefined && parseInt(age,10) > 0){
+            setVerdict('hit', '可能命中', '沒有 X-Cache,但 Age='+age+' 代表這份在快取中已存在一段時間');
+          } else {
+            setVerdict('', '無法判定', '這次沒讀到 X-Cache 之類的欄位;可能是 CDN 未回傳,或跨來源讀取限制');
+          }
+        }
+      }).catch(function(e){
+        document.getElementById('cache-panel').innerHTML = row('錯誤', '請求失敗:'+e.message, true);
+        setVerdict('', '無法檢測', '對自己的請求失敗,可能是網路或 CORS 限制');
+      });
+    }
+    fillPage();
+    recheck();
   </script>
 </body>
 </html>
