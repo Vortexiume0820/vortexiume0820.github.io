@@ -8,7 +8,7 @@
     :root{
       --bg:#10131c; --panel:#171b28; --panel2:#1e2435; --line:#2b3246;
       --text:#eef1f7; --muted:#9298aa; --mono:ui-monospace,"SF Mono",Menlo,monospace;
-      --hit:#4fd38a; --miss:#f0a24b; --unknown:#7f8aa3; --accent:#7aa7e6;
+      --hit:#4fd38a; --miss:#f0a24b; --bypass:#d46a6a; --unknown:#7f8aa3; --accent:#7aa7e6;
     }
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;
@@ -28,6 +28,7 @@
     .layer .state{display:flex;align-items:center;gap:12px}
     .dot{width:13px;height:13px;border-radius:50%;flex:0 0 auto;background:var(--unknown)}
     .layer.hit .dot{background:var(--hit)} .layer.miss .dot{background:var(--miss)}
+    .layer.bypass .dot{background:var(--bypass)}
     .layer .big{font-size:18px;font-weight:600}
     .layer .raw{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:8px;word-break:break-all}
 
@@ -37,6 +38,7 @@
       padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
     .r:last-child{border-bottom:none}
     .r .k{color:var(--muted);flex:0 0 auto}
+    .r .k small{display:block;font-size:11px;color:var(--unknown)}
     .r .v{font-family:var(--mono);text-align:right;word-break:break-all}
     .v.na{color:var(--unknown)}
     .section-title{font-size:12px;color:var(--muted);margin:0 0 8px 4px}
@@ -44,7 +46,7 @@
     .nav{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
     .btn{font-size:14px;text-decoration:none;padding:11px 18px;border-radius:10px;
       border:1px solid var(--line);color:var(--text);background:var(--panel2);cursor:pointer}
-    .btn:hover{border-color:var(--accent)}
+    .btn:hover,.btn:focus-visible{border-color:var(--accent);outline:none}
     .btn.primary{background:rgba(122,167,230,.16);border-color:rgba(122,167,230,.45);color:var(--accent)}
 
     .note{font-size:13px;color:var(--muted);background:var(--panel);border:1px solid var(--line);
@@ -59,49 +61,68 @@
       <h1>CDN 行為檢測台</h1>
       <span class="page-tag">index</span>
     </div>
-    <p class="sub">你的架構有兩層 CDN:BytePlus 在前、GitHub 的 Fastly 在後。這頁把兩層的命中狀態分開顯示。</p>
+    <p class="sub">架構有兩層 CDN：Byte Shield 在前、GitHub 的 Fastly 在後。這頁把兩層的命中狀態分開顯示。</p>
 
     <div class="layers">
-      <div class="layer" id="layer-bp">
-        <div class="name">第 1 層 · BytePlus CDN</div>
-        <div class="state"><span class="dot"></span><span class="big" id="bp-big">檢測中…</span></div>
-        <div class="raw" id="bp-raw">讀取 x-bdcdn-cache-status / x-proxy-cache</div>
+      <div class="layer" id="layer-cdn">
+        <div class="name">第 1 層 · Byte Shield CDN</div>
+        <div class="state"><span class="dot"></span><span class="big" id="cdn-big">檢測中…</span></div>
+        <div class="raw" id="cdn-raw">讀取 x-cache</div>
       </div>
       <div class="layer" id="layer-fastly">
-        <div class="name">第 2 層 · GitHub(Fastly)</div>
+        <div class="name">第 2 層 · GitHub（Fastly）</div>
         <div class="state"><span class="dot"></span><span class="big" id="fa-big">檢測中…</span></div>
-        <div class="raw" id="fa-raw">讀取 x-served-by / x-cache-hits</div>
+        <div class="raw" id="fa-raw">讀取 x-cache-hits / x-served-by</div>
       </div>
     </div>
 
-    <div class="section-title">完整回應標頭</div>
+    <div class="section-title">完整回應標頭（右側標示是哪一層給的）</div>
     <div class="panel" id="headers-panel"></div>
 
     <div class="section-title">本次請求 / 頁面資訊</div>
     <div class="panel" id="page-panel"></div>
 
     <div class="nav">
-      <button class="btn primary" onclick="recheck()">重新檢測一次</button>
+      <button class="btn primary" type="button" onclick="recheck()">重新檢測一次</button>
       <a class="btn" href="about.html">前往 about 頁 &rarr;</a>
     </div>
 
     <div class="note">
-      <b>為什麼要分兩層看:</b> <code>x-cache</code> 這個名字 BytePlus 和 Fastly 都在用,混在一起會誤判。
-      看 BytePlus 這層要認 <code>x-bdcdn-cache-status</code>;看 GitHub 那層認 <code>x-served-by</code>。<br>
-      <b>想真正測 BytePlus 回源:</b> 到 BytePlus 後台「刷新」首頁 URL,再按一次重新檢測 —— 第 1 層應會變 MISS(它被迫回源),第 2 層仍可能 HIT(Fastly 還存著)。<br>
-      <b>注意:</b> 這個檢測請求沒有強制避開快取,所以它反映的就是一般瀏覽會遇到的真實狀態。
+      <b>標頭歸屬：</b><code>x-cache</code> 原本是 Fastly 的，但 Byte Shield 會把它覆蓋成自己的值（例如 <code>BYPASS</code>），所以第 1 層讀 <code>x-cache</code>。
+      Fastly 這層改看 <code>x-cache-hits</code>，它沒有被覆蓋。<br>
+      <b>舊版的坑：</b><code>x-proxy-cache</code> 其實是 GitHub Pages 自己給的，不是 CDN 的。舊版把它當成第 1 層的備用標頭，才會把 GitHub 的 MISS 誤當成 CDN 的狀態。<br>
+      <b>BYPASS 的意思：</b>Byte Shield 沒有快取這個回應，每次都回源。要看到 MISS → HIT，得先在「缓存规则」設定快取時間。<br>
+      <b>注意：</b>這個檢測請求帶了 <code>cache:'no-store'</code>，只影響瀏覽器的快取，不影響 CDN。
     </div>
   </div>
 
   <script>
-    var ALL_HEADERS = ['x-bdcdn-cache-status','x-proxy-cache','x-cache','x-cache-hits','x-served-by','age','cache-control','via','etag','last-modified','expires','x-github-edge-region'];
+    // [標頭名稱, 來源層]
+    var HEADERS = [
+      ['x-cache',              'Byte Shield（覆蓋了 Fastly 的）'],
+      ['x-request-id',         'Byte Shield'],
+      ['x-cache-hits',         'Fastly'],
+      ['x-served-by',          'Fastly'],
+      ['via',                  'Fastly'],
+      ['age',                  'Fastly'],
+      ['x-proxy-cache',        'GitHub Pages'],
+      ['x-github-edge-region', 'GitHub Pages'],
+      ['cache-control',        '源站'],
+      ['etag',                 '源站'],
+      ['last-modified',        '源站'],
+      ['expires',              '源站']
+    ];
 
-    function row(k,v,na){return '<div class="r"><span class="k">'+k+'</span><span class="v'+(na?' na':'')+'">'+v+'</span></div>';}
+    function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+    function row(k,v,na,src){
+      return '<div class="r"><span class="k">'+esc(k)+(src?'<small>'+esc(src)+'</small>':'')+
+             '</span><span class="v'+(na?' na':'')+'">'+esc(v)+'</span></div>';
+    }
 
+    var LABEL = {hit:'命中 HIT', miss:'未命中 MISS', bypass:'略過快取 BYPASS'};
     function setLayer(id, bigId, rawId, status, rawText){
-      var el=document.getElementById(id);
-      el.className='layer'+(status?' '+status:'');
-      document.getElementById(bigId).textContent = status==='hit'?'命中 HIT':(status==='miss'?'未命中 MISS':'無法判定');
+      document.getElementById(id).className = 'layer' + (status ? ' ' + status : '');
+      document.getElementById(bigId).textContent = LABEL[status] || (status === null ? '檢測中…' : '無法判定');
       document.getElementById(rawId).textContent = rawText;
     }
 
@@ -114,39 +135,48 @@
       document.getElementById('page-panel').innerHTML=h;
     }
 
+    // Fastly 經過 shield 時 x-cache-hits 會是 "0, 1" 這種逗號清單，取最大值判斷
+    function maxHits(v){
+      var max=-1;
+      String(v).split(',').forEach(function(p){var n=parseInt(p,10); if(!isNaN(n)&&n>max) max=n;});
+      return max;
+    }
+
     function recheck(){
-      setLayer('layer-bp','bp-big','bp-raw','','檢測中…');
-      setLayer('layer-fastly','fa-big','fa-raw','','檢測中…');
+      setLayer('layer-cdn','cdn-big','cdn-raw',null,'檢測中…');
+      setLayer('layer-fastly','fa-big','fa-raw',null,'檢測中…');
       document.getElementById('headers-panel').innerHTML=row('狀態','請求中…',true);
 
       fetch(location.pathname, {cache:'no-store'}).then(function(res){
         var f={};
-        ALL_HEADERS.forEach(function(h){var v=res.headers.get(h); if(v!==null) f[h]=v;});
+        HEADERS.forEach(function(h){var v=res.headers.get(h[0]); if(v!==null) f[h[0]]=v;});
 
-        // 完整標頭列表
         var html='';
-        ALL_HEADERS.forEach(function(h){ if(f[h]!==undefined) html+=row(h,f[h]); });
-        if(html==='') html+=row('標頭','這次沒讀到可用的快取標頭(可能被跨來源限制擋住,改用 F12 看)',true);
+        HEADERS.forEach(function(h){ if(f[h[0]]!==undefined) html+=row(h[0],f[h[0]],false,h[1]); });
+        if(html==='') html=row('標頭','沒讀到任何快取標頭，請改用 F12 → Network 查看',true);
         document.getElementById('headers-panel').innerHTML=html;
 
-        // 第 1 層:BytePlus
-        var bp = (f['x-bdcdn-cache-status'] || f['x-proxy-cache'] || '').toLowerCase();
-        if(bp.indexOf('hit')>-1) setLayer('layer-bp','bp-big','bp-raw','hit', f['x-bdcdn-cache-status']||f['x-proxy-cache']);
-        else if(bp.indexOf('miss')>-1) setLayer('layer-bp','bp-big','bp-raw','miss', f['x-bdcdn-cache-status']||f['x-proxy-cache']);
-        else setLayer('layer-bp','bp-big','bp-raw','', '讀不到 BytePlus 標頭(可能跨來源限制,改看 F12)');
+        // 第 1 層：Byte Shield → x-cache
+        var xc = f['x-cache'] || '';
+        var c = xc.toLowerCase(), cs = '';
+        if(c.indexOf('bypass')>-1) cs='bypass';
+        else if(c.indexOf('hit')>-1) cs='hit';
+        else if(c.indexOf('miss')>-1) cs='miss';
+        setLayer('layer-cdn','cdn-big','cdn-raw',cs, xc ? 'x-cache: '+xc : '讀不到 x-cache');
 
-        // 第 2 層:Fastly / GitHub
-        var faHits = f['x-cache-hits'];
-        var faCache = (f['x-cache']||'').toLowerCase();
-        var faStatus='', faRaw='';
-        if(faCache.indexOf('hit')>-1 || (faHits!==undefined && parseInt(faHits,10)>0)){ faStatus='hit'; faRaw=(f['x-served-by']||'')+' · hits='+(faHits||'?'); }
-        else if(faCache.indexOf('miss')>-1 || faHits==='0'){ faStatus='miss'; faRaw=(f['x-served-by']||'')+' · hits=0'; }
-        else { faStatus=''; faRaw='讀不到 Fastly 標頭'; }
-        setLayer('layer-fastly','fa-big','fa-raw',faStatus,faRaw);
+        // 第 2 層：Fastly → 只看 x-cache-hits，不看 x-cache（已被覆蓋）
+        var hits = f['x-cache-hits'], fs='', fraw;
+        if(hits!==undefined){
+          fs = maxHits(hits)>0 ? 'hit' : 'miss';
+          fraw = (f['x-served-by']||'') + ' · hits=' + hits + (f['age']?' · age='+f['age']+'s':'');
+        } else {
+          fraw = '讀不到 x-cache-hits';
+        }
+        setLayer('layer-fastly','fa-big','fa-raw',fs,fraw);
 
       }).catch(function(e){
-        document.getElementById('headers-panel').innerHTML=row('錯誤','請求失敗:'+e.message,true);
-        setLayer('layer-bp','bp-big','bp-raw','','無法檢測');
+        document.getElementById('headers-panel').innerHTML=row('錯誤','請求失敗：'+e.message,true);
+        setLayer('layer-cdn','cdn-big','cdn-raw','','無法檢測');
         setLayer('layer-fastly','fa-big','fa-raw','','無法檢測');
       });
     }
